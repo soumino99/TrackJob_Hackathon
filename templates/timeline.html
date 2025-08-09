@@ -1,0 +1,23 @@
+{% extends "base.html" %} {% block title %}タイムライン - UniChat{% endblock %}
+{% block content %}
+<div class="timeline-container">
+  <h2>タイムライン</h2>
+  <div class="mb-3">
+    <a href="{{ url_for('post') }}" class="btn btn-tweet">新規投稿</a>
+  </div>
+
+  {% if posts %} {% for post in posts %}
+  <div class="post-card">
+    <div class="post-header">
+      <span class="username">{{ post.author.username }}</span>
+      <span class="timestamp">{{ post.timestamp|jst }}</span>
+    </div>
+    <div class="post-content">{{ post.content }}</div>
+  </div>
+  {% endfor %} {% else %}
+  <div class="alert alert-info">
+    投稿がありません。最初の投稿をしてみましょう！
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

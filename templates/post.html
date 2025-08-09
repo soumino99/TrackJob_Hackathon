@@ -1,0 +1,37 @@
+{% extends "base.html" %} {% block title %}新規投稿 - UniChat{% endblock %} {%
+block content %}
+<div class="timeline-container">
+  <h2>新規投稿</h2>
+  <div class="post-form">
+    <form method="POST">
+      <div class="mb-3">
+        <label for="content" class="form-label">投稿内容</label>
+        <textarea
+          class="form-control"
+          id="content"
+          name="content"
+          rows="3"
+          maxlength="140"
+          required
+        ></textarea>
+        <div class="char-counter mt-1"><span id="charCount">0</span>/140</div>
+      </div>
+      <button type="submit" class="btn btn-tweet">投稿する</button>
+    </form>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  document.getElementById("content").addEventListener("input", function () {
+    const charCount = this.value.length;
+    const charCountElement = document.getElementById("charCount");
+    charCountElement.textContent = charCount;
+
+    if (charCount > 140) {
+      charCountElement.style.color = "red";
+    } else {
+      charCountElement.style.color = "";
+    }
+  });
+</script>
+{% endblock %}

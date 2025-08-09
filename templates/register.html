@@ -1,0 +1,45 @@
+{% extends "base.html" %} {% block title %}新規登録 - UniChat{% endblock %} {%
+block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card register-card">
+      <div class="card-header text-center">
+        <h2>UniChat</h2>
+        <p>大学サークル向けミニSNS</p>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">新規登録</h3>
+        <form method="POST">
+          <div class="mb-3">
+            <label for="username" class="form-label">ユーザー名</label>
+            <input
+              type="text"
+              class="form-control"
+              id="username"
+              name="username"
+              required
+            />
+          </div>
+          <div class="mb-3">
+            <label for="password" class="form-label">パスワード</label>
+            <input
+              type="password"
+              class="form-control"
+              id="password"
+              name="password"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-primary w-100">登録する</button>
+        </form>
+        <div class="mt-3 text-center">
+          <p>
+            既にアカウントをお持ちの場合:
+            <a href="{{ url_for('login') }}">ログイン</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
