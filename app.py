@@ -45,7 +45,8 @@ class Post(db.Model):
     content = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-
+    channel = db.Column(db.String(20), default='general') 
+   
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -111,7 +112,13 @@ def logout():
 @app.route('/timeline')
 @login_required
 def timeline():
-    posts = Post.query.order_by(Post.timestamp.desc()).all()
+    selected_channel = request.args.get('channel', None)
+
+    if selected_channel:
+        posts = Post.query.filter_by(channel=selected_channel).order_by(Post.timestamp.desc()).all()
+    else:
+        posts = Post.query.order_by(Post.timestamp.desc()).all()
+
     return render_template('timeline.html', posts=posts)
 
 @app.route('/post', methods=['GET', 'POST'])
@@ -119,6 +126,7 @@ def timeline():
 def post():
     if request.method == 'POST':
         content = request.form.get('content')
+        channel = request.form.get('channel')
         
         if not content:
             flash('投稿内容を入力してください')
@@ -128,7 +136,14 @@ def post():
             flash('投稿は140文字以内にしてください')
             return redirect(url_for('post'))
         
-        post = Post(content=content, author=current_user)
+        if not channel:
+            channel = 'general'
+        
+        if len(channel) > 20:
+            flash('投稿は20文字以内にしてください')
+            return redirect(url_for('post'))
+        
+        post = Post(content=content, author=current_user, channel=channel)
         db.session.add(post)
         db.session.commit()
         

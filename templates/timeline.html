@@ -2,6 +2,15 @@
 {% block content %}
 <div class="timeline-container">
   <h2>タイムライン</h2>
+
+  <div class="mb-3">
+    <a href="{{ url_for('timeline') }}" class="btn btn-outline-primary {% if selected_channel %}active{% endif %}">全て</a>
+    <a href="{{ url_for('timeline', channel='general') }}" class="btn btn-outline-primary {% if selected_channel == 'general' %}active{% endif %}">一般</a>
+    <a href="{{ url_for('timeline', channel='job') }}" class="btn btn-outline-primary {% if selected_channel == 'job' %}active{% endif %}">就活</a>
+    <a href="{{ url_for('timeline', channel='class') }}" class="btn btn-outline-primary {% if selected_channel == 'class' %}active{% endif %}">授業</a>
+    <a href="{{ url_for('timeline', channel='circle') }}" class="btn btn-outline-primary {% if selected_channel == 'circle' %}active{% endif %}">サークル</a>
+  </div>
+
   <div class="mb-3">
     <a href="{{ url_for('post') }}" class="btn btn-tweet">新規投稿</a>
   </div>
@@ -9,8 +18,9 @@
   {% if posts %} {% for post in posts %}
   <div class="post-card">
     <div class="post-header">
-      <span class="username">{{ post.author.username }}</span>
+      <span class="username">User{{ post.id }}</span>
       <span class="timestamp">{{ post.timestamp|jst }}</span>
+      <span class="channel-label">{{ post.channel }}</span>
     </div>
     <div class="post-content">{{ post.content }}</div>
   </div>
