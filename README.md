@@ -12,11 +12,14 @@
 - **投稿機能**: 140文字までのテキスト投稿
 - **タイムライン**: 全ユーザーの投稿を時系列で表示
 - **マイページ**: 自分の投稿のみを表示
+- **チャンネル別投稿機能**: チャンネル別に投稿を作成、表示
 
 ## 技術スタック
 
 - **バックエンド**: Python/Flask
-- **データベース**: PostgreSQL~~SQLite~~ + SQLAlchemy
+- **データベース**: ~~PostgreSQLSQLite~~ + SQLAlchemy
+  - 将来的にはRenderのPostgreSQLを外部データベースとして運用することを想定
+  - 現時点では無料のLiteDBを使用
 - **認証**: Flask-Login
 - **フロントエンド**: HTML/CSS/Jinja2/Bootstrap
 
