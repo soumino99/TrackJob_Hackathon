@@ -213,6 +213,30 @@ def mypage():
     return render_template("mypage.html", posts=posts, user=current_user)
 
 
+@app.route("/delete_post/<int:post_id>", methods=["POST"])
+@login_required
+def delete_post(post_id):
+    post = Post.query.get_or_404(post_id)
+
+    # 投稿者本人のみ削除可能
+    if post.author != current_user:
+        flash("他のユーザーの投稿は削除できません")
+        return redirect(url_for("timeline"))
+
+    # 削除実行
+    db.session.delete(post)
+    db.session.commit()
+
+    flash("投稿を削除しました")
+
+    # リファラーがあればそこに戻る、なければタイムラインに戻る
+    referer = request.headers.get("Referer")
+    if referer and "mypage" in referer:
+        return redirect(url_for("mypage"))
+    else:
+        return redirect(url_for("timeline"))
+
+
 @app.template_filter("jst")
 def jst(datetime_utc):
     if datetime_utc is None:

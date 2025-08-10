@@ -14,6 +14,11 @@ block content %}
       <span class="channel-label {{ post.channel }}" data-channel="{{ post.channel }}">
         {{ post.channel|channel_jp }}
       </span>
+      <div class="post-actions">
+        <button class="btn-delete" onclick="deletePost({{ post.id }})" title="削除">
+          <i class="delete-icon">🗑️</i>
+        </button>
+      </div>
     </div>
     <div class="post-content">{{ post.content }}</div>
   </div>
@@ -54,6 +59,18 @@ block content %}
       }
     });
   });
+
+  // 投稿削除機能
+  function deletePost(postId) {
+    if (confirm('この投稿を削除しますか？この操作は取り消せません。')) {
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = `/delete_post/${postId}`;
+      
+      document.body.appendChild(form);
+      form.submit();
+    }
+  }
 </script>
 {% endblock %}
 </script>

@@ -54,6 +54,17 @@
       >
         {{ post.channel|channel_jp }}
       </span>
+      {% if post.author == current_user %}
+      <div class="post-actions">
+        <button
+          class="btn-delete"
+          onclick="deletePost({{ post.id }})"
+          title="削除"
+        >
+          <i class="delete-icon">🗑️</i>
+        </button>
+      </div>
+      {% endif %}
     </div>
     <div class="post-content">{{ post.content }}</div>
   </div>
@@ -146,5 +157,27 @@
       }
     });
   });
+
+  // 投稿削除機能
+  function deletePost(postId) {
+    if (confirm("この投稿を削除しますか？この操作は取り消せません。")) {
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = `/delete_post/${postId}`;
+
+      // CSRFトークンがあれば追加
+      const csrfToken = document.querySelector('meta[name="csrf-token"]');
+      if (csrfToken) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "csrf_token";
+        input.value = csrfToken.content;
+        form.appendChild(input);
+      }
+
+      document.body.appendChild(form);
+      form.submit();
+    }
+  }
 </script>
 {% endblock %}
