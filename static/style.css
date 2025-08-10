@@ -278,9 +278,30 @@ body {
 }
 
 .alert-info {
-    background-color: #d1ecf1;
-    border-color: #bee5eb;
+    background: linear-gradient(135deg, #e7f3ff 0%, #f0f8ff 100%);
+    border: 1px solid #b3d9ff;
     color: #0c5460;
+    border-left: 4px solid var(--primary-blue);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.alert-heading {
+    color: var(--primary-blue);
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.alert-info strong {
+    color: var(--primary-blue);
+    font-weight: 600;
+}
+
+.card-body .alert {
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
 }
 
 /* 投稿削除機能 */
@@ -356,6 +377,40 @@ body {
 .comment .text-muted {
     font-size: 0.75rem;
     margin-left: 0.5rem;
+}
+
+/* 登録・ログイン画面の改善 */
+.form-text {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #e7f3ff 0%, #f0f8ff 100%);
+    border: 1px solid #b3d9ff;
+    color: #0c5460;
+    border-left: 4px solid var(--primary-blue);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.alert-heading {
+    color: var(--primary-blue);
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.alert-info strong {
+    color: var(--primary-blue);
+    font-weight: 600;
+}
+
+.card-body .alert {
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
 }
 
 /* レスポンシブ対応：投稿アクション */

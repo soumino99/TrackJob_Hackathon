@@ -7,9 +7,13 @@ block content %}
         <h2>UniAnon</h2>
         <p>大学生向け匿名悩み相談アプリ</p>
       </div>
+
       <div class="card-body">
         <h3 class="card-title">新規登録</h3>
-        <form method="POST">
+
+        <form method="POST" action="{{ url_for('register') }}">
+          {# Flask-WTF 使用時は有効化: {{ form.hidden_tag() }} #}
+
           <div class="mb-3">
             <label for="username" class="form-label">ユーザー名</label>
             <input
@@ -19,8 +23,8 @@ block content %}
               name="username"
               required
             />
-            <div class="form-text">ログイン時に使用します</div>
           </div>
+
           <div class="mb-3">
             <label for="password" class="form-label">パスワード</label>
             <input
@@ -30,12 +34,29 @@ block content %}
               name="password"
               required
             />
-            <div class="form-text">安全なパスワードを設定してください</div>
           </div>
+
+          <div class="alert alert-info mb-3">
+            <h6 class="alert-heading">
+              <i class="bi bi-shield-check"></i> 完全匿名保護について
+            </h6>
+            <small>
+              <strong>ユーザー名の保護：</strong>
+              あなたのユーザー名は自分にだけ表示され、他のユーザーには一切表示されません。<br /><br />
+              <strong>匿名ID化：</strong>
+              投稿は「ポスト1A2B3C4D」のような匿名IDで表示され、誰かに投稿が識別されることはありません。<br /><br />
+              <strong>投稿ごとに異なるID：</strong>
+              同じ人でも投稿ごとに異なる匿名IDが生成されるため、投稿パターンから特定されません。<br /><br />
+              <strong>マイページのみ実名：</strong>
+              自分のマイページでのみ、自分の投稿・コメントが実名表示されます。
+            </small>
+          </div>
+
           <button type="submit" class="btn btn-primary w-100">
             アカウントを作成
           </button>
         </form>
+
         <div class="mt-3 text-center">
           <p>
             既にアカウントをお持ちの場合:
