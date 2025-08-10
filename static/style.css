@@ -344,7 +344,7 @@ body {
 }
 
 /* マイページでの自分のコメントのスタイル */
-.comment strong:not([data-anonymous]) {
+.comment strong.own-comment {
     font-family: 'Segoe UI', Arial, sans-serif;
     background: linear-gradient(135deg, #1da1f2 0%, #0c85d0 100%);
     -webkit-background-clip: text;

@@ -45,7 +45,7 @@ block content %}
     {% set comments_sorted = post.comments.all()|sort(attribute='timestamp') %}
     {% for c in comments_sorted %}
     <div class="comment">
-      {% if c.session_id in session.get('user_comments', []) %}
+      {% if c.user_id == current_user.id %}
       <strong>{{ current_user.username }}</strong>：{{ c.content }} {% else %}
       <strong>{{ c.get_display_name() }}</strong>：{{ c.content }} {% endif %}
       <span class="text-muted">（{{ c.timestamp|jst }}）</span>

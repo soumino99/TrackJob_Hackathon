@@ -114,15 +114,19 @@ class Comment(db.Model):
     timestamp = db.Column(
         db.DateTime, index=True, default=datetime.utcnow, nullable=False
     )
-    # user_idを削除して完全匿名化
+    # user_idを復活（内部管理用、表示は匿名ID）
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id"), nullable=False, index=True
+    )
     session_id = db.Column(
         db.String(128), nullable=True, index=True
-    )  # セッション識別用
+    )  # セッション識別用（予備）
     post_id = db.Column(
         db.Integer, db.ForeignKey("posts.id"), nullable=False, index=True
     )
 
-    # userとの関連を削除
+    # userとの関連を復活
+    user = db.relationship("User", backref=db.backref("comments", lazy="joined"))
     post = db.relationship("Post", backref=db.backref("comments", lazy="dynamic"))
 
     def get_anonymous_id(self):
@@ -367,21 +371,18 @@ def comment(post_id):
         flash("コメント内容を入力してください")
         return redirect(request.referrer or url_for("timeline", channel=post.channel))
 
-    # セッションIDを生成（コメント投稿者識別用だが匿名性は保持）
+    # セッションIDを生成（予備用）
     comment_session_id = secrets.token_urlsafe(32)
 
-    # コメントの作成（ユーザーとは紐づけない）
+    # コメントの作成（user_idも保存、表示は匿名ID）
     new_comment = Comment(
-        content=content, post_id=post.id, session_id=comment_session_id
+        content=content,
+        post_id=post.id,
+        user_id=current_user.id,
+        session_id=comment_session_id,
     )
     db.session.add(new_comment)
     db.session.commit()
-
-    # セッションにコメントIDを保存（将来的な削除機能用）
-    if "user_comments" not in session:
-        session["user_comments"] = []
-    session["user_comments"].append(new_comment.id)
-    session.permanent = True
 
     return redirect(request.referrer or url_for("timeline", channel=post.channel))
 
