@@ -72,8 +72,10 @@ class Post(db.Model):
         db.DateTime, index=True, default=datetime.utcnow, nullable=False
     )
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    # 既存DBに追加する場合はマイグレーションが必要
     channel = db.Column(db.String(20), nullable=False, default="general", index=True)
+    # 削除フラグを追加
+    is_deleted = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    deleted_at = db.Column(db.DateTime, nullable=True)
 
 
 @login_manager.user_loader
@@ -154,12 +156,12 @@ def timeline():
     selected_channel = request.args.get("channel", None)
     if selected_channel in ALLOWED_CHANNELS:
         posts = (
-            Post.query.filter_by(channel=selected_channel)
+            Post.query.filter_by(channel=selected_channel, is_deleted=False)
             .order_by(Post.timestamp.desc())
             .all()
         )
     else:
-        posts = Post.query.order_by(Post.timestamp.desc()).all()
+        posts = Post.query.filter_by(is_deleted=False).order_by(Post.timestamp.desc()).all()
         selected_channel = None  # 無効値は未選択扱い
 
     return render_template(
@@ -206,7 +208,7 @@ def post():
 @login_required
 def mypage():
     posts = (
-        Post.query.filter_by(user_id=current_user.id)
+        Post.query.filter_by(user_id=current_user.id, is_deleted=False)
         .order_by(Post.timestamp.desc())
         .all()
     )
@@ -223,8 +225,9 @@ def delete_post(post_id):
         flash("他のユーザーの投稿は削除できません")
         return redirect(url_for("timeline"))
 
-    # 削除実行
-    db.session.delete(post)
+    # 論理削除（削除フラグを立てる）
+    post.is_deleted = True
+    post.deleted_at = datetime.utcnow()
     db.session.commit()
 
     flash("投稿を削除しました")
@@ -235,6 +238,19 @@ def delete_post(post_id):
         return redirect(url_for("mypage"))
     else:
         return redirect(url_for("timeline"))
+
+
+# 管理者用：削除された投稿を確認する機能（将来的に追加可能）
+@app.route("/admin/deleted_posts")
+@login_required
+def admin_deleted_posts():
+    # 管理者権限チェックは別途実装
+    deleted_posts = (
+        Post.query.filter_by(is_deleted=True)
+        .order_by(Post.deleted_at.desc())
+        .all()
+    )
+    return render_template("admin/deleted_posts.html", posts=deleted_posts)
 
 
 @app.template_filter("jst")
