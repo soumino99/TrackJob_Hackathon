@@ -2,7 +2,14 @@ from datetime import datetime
 import pytz
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_login import (
+    LoginManager,
+    UserMixin,
+    login_user,
+    login_required,
+    logout_user,
+    current_user,
+)
 from werkzeug.security import generate_password_hash, check_password_hash
 import os  
 from dotenv import load_dotenv  
@@ -46,6 +53,8 @@ class Post(db.Model):
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     channel_id = db.Column(db.Integer, db.ForeignKey('channels.id'))
+    is_deleted = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    deleted_at = db.Column(db.DateTime, nullable=True)
 
 class Channel(db.Model):
     __tablename__ = 'channels'
@@ -55,6 +64,40 @@ class Channel(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'),nullable=True)  
 
     posts = db.relationship('Post', backref='channel_obj', lazy='dynamic')
+
+# いいねモデル
+class Like(db.Model):
+    __tablename__ = "likes"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id"), nullable=False, index=True
+    )
+    post_id = db.Column(
+        db.Integer, db.ForeignKey("posts.id"), nullable=False, index=True
+    )
+
+    user = db.relationship("User", backref=db.backref("likes", lazy="dynamic"))
+    post = db.relationship("Post", backref=db.backref("likes", lazy="dynamic"))
+
+
+# コメントモデル
+class Comment(db.Model):
+    __tablename__ = "comments"
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(
+        db.DateTime, index=True, default=datetime.utcnow, nullable=False
+    )
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id"), nullable=False, index=True
+    )
+    post_id = db.Column(
+        db.Integer, db.ForeignKey("posts.id"), nullable=False, index=True
+    )
+
+    user = db.relationship("User", backref=db.backref("comments", lazy="joined"))
+    post = db.relationship("Post", backref=db.backref("comments", lazy="dynamic"))
+
    
 @login_manager.user_loader
 def load_user(user_id):
@@ -204,6 +247,41 @@ def mypage():
     posts = Post.query.filter_by(user_id=current_user.id).order_by(Post.timestamp.desc()).all()
     return render_template('mypage.html', posts=posts, user=current_user)
 
+@app.route("/delete_post/<int:post_id>", methods=["POST"])
+@login_required
+def delete_post(post_id):
+    post = Post.query.get_or_404(post_id)
+
+    # 投稿者本人のみ削除可能
+    if post.author != current_user:
+        flash("他のユーザーの投稿は削除できません")
+        return redirect(url_for("timeline"))
+
+    # 論理削除（削除フラグを立てる）
+    post.is_deleted = True
+    post.deleted_at = datetime.utcnow()
+    db.session.commit()
+
+    flash("投稿を削除しました")
+
+    # リファラーがあればそこに戻る、なければタイムラインに戻る
+    referer = request.headers.get("Referer")
+    if referer and "mypage" in referer:
+        return redirect(url_for("mypage"))
+    else:
+        return redirect(url_for("timeline"))
+    
+# 管理者用：削除された投稿を確認する機能（将来的に追加可能）
+@app.route("/admin/deleted_posts")
+@login_required
+def admin_deleted_posts():
+    # 管理者権限チェックは別途実装
+    deleted_posts = (
+        Post.query.filter_by(is_deleted=True).order_by(Post.deleted_at.desc()).all()
+    )
+    return render_template("admin/deleted_posts.html", posts=deleted_posts)
+
+
 @app.template_filter('jst')
 def jst(datetime_utc):
     if datetime_utc is None:
@@ -217,6 +295,35 @@ def jst(datetime_utc):
     datetime_jst = datetime_utc.astimezone(jst)
 
     return datetime_jst.strftime('%Y/%m/%d %H:%M')
+
+# いいね（トグル）
+@app.route("/like/<int:post_id>", methods=["POST"])
+@login_required
+def like(post_id):
+    post = Post.query.get_or_404(post_id)
+    existing = Like.query.filter_by(user_id=current_user.id, post_id=post.id).first()
+    if existing:
+        db.session.delete(existing)  # 解除
+    else:
+        db.session.add(Like(user_id=current_user.id, post_id=post.id))
+    db.session.commit()
+    # 元のチャンネルを保つ
+    return redirect(request.referrer or url_for("timeline", channel=post.channel))
+
+
+# コメント投稿
+@app.route("/comment/<int:post_id>", methods=["POST"])
+@login_required
+def comment(post_id):
+    post = Post.query.get_or_404(post_id)
+    content = (request.form.get("content") or "").strip()
+    if not content:
+        flash("コメント内容を入力してください")
+        return redirect(request.referrer or url_for("timeline", channel=post.channel))
+    db.session.add(Comment(content=content, user_id=current_user.id, post_id=post.id))
+    db.session.commit()
+    return redirect(request.referrer or url_for("timeline", channel=post.channel))
+
 
 
 # アプリケーション起動時にDBを作成

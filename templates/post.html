@@ -33,10 +33,13 @@ block content %}
     const charCountElement = document.getElementById("charCount");
     charCountElement.textContent = charCount;
 
+    // 文字数に応じたスタイリング
     if (charCount > 140) {
-      charCountElement.style.color = "red";
+      charCountElement.className = "char-counter mt-1 danger";
+    } else if (charCount > 120) {
+      charCountElement.className = "char-counter mt-1 warning";
     } else {
-      charCountElement.style.color = "";
+      charCountElement.className = "char-counter mt-1";
     }
   });
 </script>

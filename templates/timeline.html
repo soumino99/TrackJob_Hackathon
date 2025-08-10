@@ -20,11 +20,75 @@
   {% if posts %} {% for post in posts %}
   <div class="post-card">
     <div class="post-header">
-      <span class="username">User{{ post.id }}</span>
-      <span class="timestamp">{{ post.timestamp|jst }}</span>&nbsp;
-      <span class="channel-label">{{ post.channel_obj.name }}</span>
+      <span class="username">{{ post.author.username }}</span>
+      <span class="timestamp">{{ post.timestamp|jst }}</span>
+      <span
+        class="channel-label {{ post.channel }}"
+        data-channel="{{ post.channel }}"
+      >
+        {{ post.channel_obj.name }}
+      </span>
+      {% if post.author == current_user %}
+      <div class="post-actions">
+        <button
+          class="btn-delete"
+          onclick="deletePost({{ post.id }})"
+          title="削除"
+        >
+          <i class="delete-icon">🗑️</i>
+        </button>
+      </div>
+      {% endif %}
     </div>
+
     <div class="post-content">{{ post.content }}</div>
+
+    <!-- いいね -->
+    <div class="d-flex align-items-center gap-2">
+      <form
+        action="{{ url_for('like', post_id=post.id) }}"
+        method="post"
+        style="display: inline"
+      >
+        {% if current_user.is_authenticated and
+        post.likes.filter_by(user_id=current_user.id).first() %}
+        <button type="submit" class="btn btn-sm btn-outline-danger">
+          ❤️ {{ post.likes.count() }}
+        </button>
+        {% else %}
+        <button type="submit" class="btn btn-sm btn-outline-secondary">
+          🤍 {{ post.likes.count() }}
+        </button>
+        {% endif %}
+      </form>
+      <span class="text-muted">コメント {{ post.comments.count() }}</span>
+    </div>
+
+    <!-- コメント投稿 -->
+    <form
+      action="{{ url_for('comment', post_id=post.id) }}"
+      method="post"
+      class="mt-2"
+    >
+      <div class="input-group">
+        <input
+          type="text"
+          name="content"
+          class="form-control"
+          placeholder="コメントを入力"
+        />
+        <button type="submit" class="btn btn-outline-primary">送信</button>
+      </div>
+    </form>
+
+    <!-- コメント一覧（timestamp昇順） -->
+    {% set comments_sorted = post.comments.all()|sort(attribute='timestamp') %}
+    {% for c in comments_sorted %}
+    <div class="comment">
+      <strong>{{ c.user.username }}</strong>：{{ c.content }}
+      <span class="text-muted">（{{ c.timestamp|jst }}）</span>
+    </div>
+    {% endfor %}
   </div>
   {% endfor %} {% else %}
   <div class="alert alert-info">
@@ -32,4 +96,87 @@
   </div>
   {% endif %}
 </div>
+{% endblock %} {% block scripts %}
+<script>
+  // チャンネル名から色を生成する関数
+  function getChannelColor(channelName) {
+    let hash = 0;
+    for (let i = 0; i < channelName.length; i++) {
+      const char = channelName.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash;
+    }
+    const hue = Math.abs(hash) % 360;
+    const saturation = 65 + (Math.abs(hash) % 20);
+    const lightness = 45 + (Math.abs(hash) % 15);
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  }
+
+  // チャンネルラベルに動的色を適用
+  document.addEventListener("DOMContentLoaded", function () {
+    const channelLabels = document.querySelectorAll(".channel-label");
+    channelLabels.forEach((label) => {
+      const channelName = label.dataset.channel;
+      if (
+        channelName &&
+        !["general", "job", "class", "circle"].includes(channelName)
+      ) {
+        const color = getChannelColor(channelName);
+        label.style.backgroundColor = color;
+      }
+    });
+
+    const channelButtons = document.querySelectorAll(
+      '.btn-outline-primary[href*="channel="]'
+    );
+    channelButtons.forEach((button) => {
+      const url = new URL(button.href);
+      const channelName = url.searchParams.get("channel");
+      if (
+        channelName &&
+        !["general", "job", "class", "circle"].includes(channelName)
+      ) {
+        const color = getChannelColor(channelName);
+        button.style.color = color;
+        button.style.borderColor = color;
+        if (button.classList.contains("active")) {
+          button.style.backgroundColor = color;
+          button.style.borderColor = color;
+          button.style.color = "white";
+        }
+        button.addEventListener("mouseenter", function () {
+          if (!this.classList.contains("active")) {
+            this.style.backgroundColor = color;
+            this.style.color = "white";
+          }
+        });
+        button.addEventListener("mouseleave", function () {
+          if (!this.classList.contains("active")) {
+            this.style.backgroundColor = "transparent";
+            this.style.color = color;
+          }
+        });
+      }
+    });
+  });
+
+  // 投稿削除
+  function deletePost(postId) {
+    if (confirm("この投稿を削除しますか？この操作は取り消せません。")) {
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = `/delete_post/${postId}`;
+      const csrfToken = document.querySelector('meta[name="csrf-token"]');
+      if (csrfToken) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "csrf_token";
+        input.value = csrfToken.content;
+        form.appendChild(input);
+      }
+      document.body.appendChild(form);
+      form.submit();
+    }
+  }
+</script>
 {% endblock %}
