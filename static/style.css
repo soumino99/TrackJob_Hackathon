@@ -29,6 +29,21 @@ body {
     color: white !important;
 }
 
+/* ユーザー名リンクのスタイル */
+.nav-link[title="マイページ"] {
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 0.5rem 1rem !important;
+    transition: all 0.3s ease;
+}
+
+.nav-link[title="マイページ"]:hover,
+.nav-link[title="マイページ"].active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
 /* チャンネル選択ボタン */
 .btn-outline-primary {
     color: #1da1f2;
@@ -128,6 +143,21 @@ body {
     font-weight: bold;
     margin-right: 5px;
     color: #14171a;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* マイページでの自分の投稿のユーザー名スタイル */
+.post-card .username:not([data-anonymous]) {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #1da1f2 0%, #0c85d0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .timestamp {
@@ -292,6 +322,40 @@ body {
 
 .btn-delete:hover .delete-icon {
     filter: grayscale(0);
+}
+
+/* コメント（返信）の匿名ID */
+.comment {
+    border-left: 3px solid #e1e8ed;
+    padding: 0.5rem 0.75rem;
+    margin: 0.5rem 0;
+    background-color: #f8f9fa;
+    border-radius: 0 8px 8px 0;
+}
+
+.comment strong {
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 600;
+}
+
+/* マイページでの自分のコメントのスタイル */
+.comment strong:not([data-anonymous]) {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #1da1f2 0%, #0c85d0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 600;
+}
+
+.comment .text-muted {
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
 }
 
 /* レスポンシブ対応：投稿アクション */

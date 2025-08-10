@@ -1,6 +1,6 @@
 from datetime import datetime
 import pytz
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
     LoginManager,
@@ -13,6 +13,8 @@ from flask_login import (
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from dotenv import load_dotenv
+import hashlib
+import secrets
 
 load_dotenv()
 
@@ -77,6 +79,17 @@ class Post(db.Model):
     is_deleted = db.Column(db.Boolean, default=False, nullable=False, index=True)
     deleted_at = db.Column(db.DateTime, nullable=True)
 
+    def get_anonymous_id(self):
+        """投稿IDベースの匿名ID生成（投稿ごとに一意）"""
+        secret_key = app.config["SECRET_KEY"]
+        raw_string = f"post-{self.id}-{secret_key}"
+        hash_obj = hashlib.sha256(raw_string.encode())
+        return hash_obj.hexdigest()[:8].upper()
+
+    def get_display_name(self):
+        """表示用の匿名名前を取得"""
+        return f"ポスト{self.get_anonymous_id()}"
+
 
 # いいねモデル
 class Like(db.Model):
@@ -101,15 +114,27 @@ class Comment(db.Model):
     timestamp = db.Column(
         db.DateTime, index=True, default=datetime.utcnow, nullable=False
     )
-    user_id = db.Column(
-        db.Integer, db.ForeignKey("users.id"), nullable=False, index=True
-    )
+    # user_idを削除して完全匿名化
+    session_id = db.Column(
+        db.String(128), nullable=True, index=True
+    )  # セッション識別用
     post_id = db.Column(
         db.Integer, db.ForeignKey("posts.id"), nullable=False, index=True
     )
 
-    user = db.relationship("User", backref=db.backref("comments", lazy="joined"))
+    # userとの関連を削除
     post = db.relationship("Post", backref=db.backref("comments", lazy="dynamic"))
+
+    def get_anonymous_id(self):
+        """コメントIDベースの匿名ID生成（コメントごとに一意）"""
+        secret_key = app.config["SECRET_KEY"]
+        raw_string = f"comment-{self.post_id}-{self.id}-{secret_key}"
+        hash_obj = hashlib.sha256(raw_string.encode())
+        return hash_obj.hexdigest()[:8].upper()
+
+    def get_display_name(self):
+        """表示用の匿名名前を取得"""
+        return f"返信{self.get_anonymous_id()}"
 
 
 @login_manager.user_loader
@@ -341,8 +366,23 @@ def comment(post_id):
     if not content:
         flash("コメント内容を入力してください")
         return redirect(request.referrer or url_for("timeline", channel=post.channel))
-    db.session.add(Comment(content=content, user_id=current_user.id, post_id=post.id))
+
+    # セッションIDを生成（コメント投稿者識別用だが匿名性は保持）
+    comment_session_id = secrets.token_urlsafe(32)
+
+    # コメントの作成（ユーザーとは紐づけない）
+    new_comment = Comment(
+        content=content, post_id=post.id, session_id=comment_session_id
+    )
+    db.session.add(new_comment)
     db.session.commit()
+
+    # セッションにコメントIDを保存（将来的な削除機能用）
+    if "user_comments" not in session:
+        session["user_comments"] = []
+    session["user_comments"].append(new_comment.id)
+    session.permanent = True
+
     return redirect(request.referrer or url_for("timeline", channel=post.channel))
 
 

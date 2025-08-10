@@ -46,7 +46,7 @@
   {% if posts %} {% for post in posts %}
   <div class="post-card">
     <div class="post-header">
-      <span class="username">{{ post.author.username }}</span>
+      <span class="username">{{ post.get_display_name() }}</span>
       <span class="timestamp">{{ post.timestamp|jst }}</span>
       <span
         class="channel-label {{ post.channel }}"
@@ -111,7 +111,7 @@
     {% set comments_sorted = post.comments.all()|sort(attribute='timestamp') %}
     {% for c in comments_sorted %}
     <div class="comment">
-      <strong>{{ c.user.username }}</strong>：{{ c.content }}
+      <strong>{{ c.get_display_name() }}</strong>：{{ c.content }}
       <span class="text-muted">（{{ c.timestamp|jst }}）</span>
     </div>
     {% endfor %}
