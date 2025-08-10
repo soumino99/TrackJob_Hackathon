@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
@@ -15,6 +15,7 @@ import os
 from dotenv import load_dotenv
 import hashlib
 import secrets
+import random
 
 load_dotenv()
 
@@ -23,6 +24,10 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "default-secret-key")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///data.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# ダミーデータ生成フラグ（開発・デモ用）
+# True: ダミーデータを自動生成、False: 生成しない
+GENERATE_DUMMY_DATA = True  # 本番環境では False に変更
 
 # DB初期化
 db = SQLAlchemy(app)
@@ -387,9 +392,149 @@ def comment(post_id):
     return redirect(request.referrer or url_for("timeline", channel=post.channel))
 
 
+def create_dummy_data():
+    """ダミーデータを生成する"""
+    if not GENERATE_DUMMY_DATA:
+        return
+
+    # 既にデータが存在する場合はスキップ
+    if Post.query.first():
+        return
+
+    print("Generating dummy data...")
+
+    # ダミーユーザーを作成
+    dummy_users = []
+    for i in range(5):
+        username = f"user{i+1}"
+        if not User.query.filter_by(username=username).first():
+            user = User(username=username)
+            user.set_password("password123")
+            db.session.add(user)
+            dummy_users.append(user)
+
+    db.session.commit()
+
+    # 各チャンネルのダミー投稿データ
+    dummy_posts = {
+        "general": [
+            "大学生活、思ってたより忙しいです...",
+            "今日は図書館で勉強してきました！",
+            "来週からテスト期間、がんばろう",
+            "新しいサークルに入るか迷っています",
+            "大学の食堂のメニュー、もう少し増えてほしい",
+            "友達と遊ぶ時間がなかなか取れない",
+            "一人暮らし始めて3ヶ月、慣れました",
+            "朝起きるのが本当に辛い...",
+            "大学の授業、どれも面白いです",
+            "バイトと勉強の両立が大変",
+        ],
+        "job": [
+            "就活って何から始めればいいんでしょうか？",
+            "エントリーシート書くの難しい...",
+            "面接で緊張しすぎてしまいます",
+            "IT業界に興味があるんですが、どうでしょうか？",
+            "インターンシップの選び方教えてください",
+            "自己分析がうまくできません",
+            "業界研究の進め方がわからない",
+            "就活の軸が定まらなくて困ってます",
+            "SPIの対策、どうしてますか？",
+            "就活と学業の両立が大変です",
+        ],
+        "class": [
+            "レポートの書き方がわかりません",
+            "この授業、単位取るの難しそう...",
+            "プレゼンが来週あって緊張してます",
+            "グループワークが苦手です",
+            "教授に質問するタイミングがわからない",
+            "授業についていけなくて困ってます",
+            "テスト勉強のコツ教えてください",
+            "出席は取る授業ですか？",
+            "この科目、面白いですよ！",
+            "期末レポートのテーマが決まらない",
+        ],
+        "circle": [
+            "新歓でサークル勧誘されました！",
+            "テニスサークルって忙しいですか？",
+            "軽音楽部に興味があります",
+            "サークル掛け持ちってどうでしょう？",
+            "合宿の準備が大変です",
+            "サークルの人間関係が難しい...",
+            "部費が思ったより高くて驚きました",
+            "文化祭でサークル発表します",
+            "OBの先輩方とのつながりが心強いです",
+            "サークル辞めるタイミングがわからない",
+        ],
+    }
+
+    # ダミーコメントデータ
+    dummy_comments = [
+        "わかります！同じ状況です",
+        "頑張ってください！応援してます",
+        "私も経験しました、大丈夫ですよ",
+        "そうですね、難しい問題ですね",
+        "参考になります、ありがとう",
+        "同感です！",
+        "いい考えですね",
+        "私も気になってました",
+        "情報共有ありがとうございます",
+        "お疲れ様です",
+    ]
+
+    # ダミー投稿を作成
+    all_posts = []
+    for channel, posts in dummy_posts.items():
+        for content in posts:
+            user = random.choice(dummy_users)
+            post = Post(
+                content=content,
+                author=user,
+                channel=channel,
+                timestamp=datetime.utcnow()
+                - timedelta(
+                    days=random.randint(0, 30),
+                    hours=random.randint(0, 23),
+                    minutes=random.randint(0, 59),
+                ),
+            )
+            db.session.add(post)
+            all_posts.append(post)
+
+    db.session.commit()
+
+    # ダミーコメントを作成
+    for post in all_posts:
+        # 各投稿に0〜5個のコメントをランダムに追加
+        comment_count = random.randint(0, 5)
+        for _ in range(comment_count):
+            commenter = random.choice(dummy_users)
+            comment_content = random.choice(dummy_comments)
+            comment = Comment(
+                content=comment_content,
+                user_id=commenter.id,
+                post_id=post.id,
+                session_id=secrets.token_urlsafe(32),
+                timestamp=post.timestamp + timedelta(hours=random.randint(1, 48)),
+            )
+            db.session.add(comment)
+
+    # ダミーいいねを作成
+    for post in all_posts:
+        # 各投稿に0〜8個のいいねをランダムに追加
+        like_count = random.randint(0, 8)
+        users_who_liked = random.sample(dummy_users, min(like_count, len(dummy_users)))
+        for user in users_who_liked:
+            like = Like(user_id=user.id, post_id=post.id)
+            db.session.add(like)
+
+    db.session.commit()
+    print(f"Generated {len(all_posts)} dummy posts with comments and likes!")
+
+
 # アプリケーション起動時にDBを作成（初回のみテーブル作成）
 with app.app_context():
     db.create_all()
+    create_dummy_data()  # ダミーデータ生成
 
 if __name__ == "__main__":
     app.run()  # 開発中のみ debug=True を検討
