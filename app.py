@@ -178,7 +178,7 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        flash("登録が完了しました。ログインしてください。")
+        flash("アカウントの登録が完了しました。ログインしてください。")
         return redirect(url_for("login"))
 
     return render_template("register.html")
