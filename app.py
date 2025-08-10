@@ -161,7 +161,9 @@ def timeline():
             .all()
         )
     else:
-        posts = Post.query.filter_by(is_deleted=False).order_by(Post.timestamp.desc()).all()
+        posts = (
+            Post.query.filter_by(is_deleted=False).order_by(Post.timestamp.desc()).all()
+        )
         selected_channel = None  # 無効値は未選択扱い
 
     return render_template(
@@ -246,9 +248,7 @@ def delete_post(post_id):
 def admin_deleted_posts():
     # 管理者権限チェックは別途実装
     deleted_posts = (
-        Post.query.filter_by(is_deleted=True)
-        .order_by(Post.deleted_at.desc())
-        .all()
+        Post.query.filter_by(is_deleted=True).order_by(Post.deleted_at.desc()).all()
     )
     return render_template("admin/deleted_posts.html", posts=deleted_posts)
 
