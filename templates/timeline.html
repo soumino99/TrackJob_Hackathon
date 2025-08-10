@@ -6,41 +6,54 @@
   <div class="mb-3">
     <a
       href="{{ url_for('timeline') }}"
-      class="btn btn-outline-primary {% if selected_channel %}active{% endif %}"
+      class="btn btn-outline-primary {% if not selected_channel %}active{% endif %}"
       >全て</a
     >
     <a
       href="{{ url_for('timeline', channel='general') }}"
-      class="btn btn-outline-primary {% if selected_channel == 'general' %}active{% endif %}"
+      class="btn btn-outline-primary channel-general {% if selected_channel == 'general' %}active{% endif %}"
       >一般</a
     >
     <a
       href="{{ url_for('timeline', channel='job') }}"
-      class="btn btn-outline-primary {% if selected_channel == 'job' %}active{% endif %}"
+      class="btn btn-outline-primary channel-job {% if selected_channel == 'job' %}active{% endif %}"
       >就活</a
     >
     <a
       href="{{ url_for('timeline', channel='class') }}"
-      class="btn btn-outline-primary {% if selected_channel == 'class' %}active{% endif %}"
+      class="btn btn-outline-primary channel-class {% if selected_channel == 'class' %}active{% endif %}"
       >授業</a
     >
     <a
       href="{{ url_for('timeline', channel='circle') }}"
-      class="btn btn-outline-primary {% if selected_channel == 'circle' %}active{% endif %}"
+      class="btn btn-outline-primary channel-circle {% if selected_channel == 'circle' %}active{% endif %}"
       >サークル</a
     >
   </div>
 
   <div class="mb-3">
+    {% if selected_channel %}
+    <a
+      href="{{ url_for('post', channel=selected_channel) }}"
+      class="btn btn-tweet"
+      >新規投稿</a
+    >
+    {% else %}
     <a href="{{ url_for('post') }}" class="btn btn-tweet">新規投稿</a>
+    {% endif %}
   </div>
 
   {% if posts %} {% for post in posts %}
   <div class="post-card">
     <div class="post-header">
-      <span class="username">User{{ post.id }}</span>
+      <span class="username">{{ post.author.username }}</span>
       <span class="timestamp">{{ post.timestamp|jst }}</span>
-      <span class="channel-label">{{ post.channel }}</span>
+      <span
+        class="channel-label {{ post.channel }}"
+        data-channel="{{ post.channel }}"
+      >
+        {{ post.channel|channel_jp }}
+      </span>
     </div>
     <div class="post-content">{{ post.content }}</div>
   </div>
@@ -50,4 +63,88 @@
   </div>
   {% endif %}
 </div>
+{% endblock %} {% block scripts %}
+<script>
+  // チャンネル名から色を生成する関数
+  function getChannelColor(channelName) {
+    // 文字列のハッシュ値を計算
+    let hash = 0;
+    for (let i = 0; i < channelName.length; i++) {
+      const char = channelName.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash; // 32bit整数に変換
+    }
+
+    // ハッシュ値から色相を計算（0-360度）
+    const hue = Math.abs(hash) % 360;
+
+    // 彩度と明度を適切に設定
+    const saturation = 65 + (Math.abs(hash) % 20); // 65-84%
+    const lightness = 45 + (Math.abs(hash) % 15); // 45-59%
+
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  }
+
+  // チャンネルラベルに動的色を適用
+  document.addEventListener("DOMContentLoaded", function () {
+    const channelLabels = document.querySelectorAll(".channel-label");
+
+    channelLabels.forEach((label) => {
+      // データ属性から英語のチャンネル名を取得（色生成用）
+      const channelName = label.dataset.channel;
+
+      // 基本チャンネル以外は動的色を適用
+      if (
+        channelName &&
+        !["general", "job", "class", "circle"].includes(channelName)
+      ) {
+        const color = getChannelColor(channelName);
+        label.style.backgroundColor = color;
+      }
+    });
+
+    // チャンネル選択ボタンにも動的色を適用
+    const channelButtons = document.querySelectorAll(
+      '.btn-outline-primary[href*="channel="]'
+    );
+
+    channelButtons.forEach((button) => {
+      const url = new URL(button.href);
+      const channelName = url.searchParams.get("channel");
+
+      if (
+        channelName &&
+        !["general", "job", "class", "circle"].includes(channelName)
+      ) {
+        const color = getChannelColor(channelName);
+
+        // 通常状態
+        button.style.color = color;
+        button.style.borderColor = color;
+
+        // アクティブ状態
+        if (button.classList.contains("active")) {
+          button.style.backgroundColor = color;
+          button.style.borderColor = color;
+          button.style.color = "white";
+        }
+
+        // ホバー効果
+        button.addEventListener("mouseenter", function () {
+          if (!this.classList.contains("active")) {
+            this.style.backgroundColor = color;
+            this.style.color = "white";
+          }
+        });
+
+        button.addEventListener("mouseleave", function () {
+          if (!this.classList.contains("active")) {
+            this.style.backgroundColor = "transparent";
+            this.style.color = color;
+          }
+        });
+      }
+    });
+  });
+</script>
 {% endblock %}

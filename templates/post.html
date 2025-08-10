@@ -7,10 +7,12 @@ block content %}
       <div class="mb-3">
         <label for="channel" class="form-label">チャンネル</label>
         <select name="channel" id="channel" class="form-select" required>
-          <option value="general" selected>一般</option>
-          <option value="job">就活</option>
-          <option value="class">授業</option>
-          <option value="circle">サークル</option>
+          {% for channel in get_all_channels() %}
+          <option value="{{ channel.code }}" 
+            {% if channel.code == default_channel %}selected{% endif %}>
+            {{ channel.name }}
+          </option>
+          {% endfor %}
         </select>
       </div>
       <div class="mb-3">
@@ -31,15 +33,20 @@ block content %}
 </div>
 {% endblock %} {% block scripts %}
 <script>
+  // デフォルトチャンネルは既にテンプレートで設定済み
+  
   document.getElementById("content").addEventListener("input", function () {
     const charCount = this.value.length;
     const charCountElement = document.getElementById("charCount");
     charCountElement.textContent = charCount;
 
+    // 文字数に応じたスタイリング
     if (charCount > 140) {
-      charCountElement.style.color = "red";
+      charCountElement.className = "char-counter mt-1 danger";
+    } else if (charCount > 120) {
+      charCountElement.className = "char-counter mt-1 warning";
     } else {
-      charCountElement.style.color = "";
+      charCountElement.className = "char-counter mt-1";
     }
   });
 </script>

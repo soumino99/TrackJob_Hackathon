@@ -33,6 +33,19 @@ login_manager.login_view = "login"
 # 利用可能なチャンネル
 ALLOWED_CHANNELS = {"general", "job", "class", "circle"}
 
+# チャンネル名の日本語変換辞書
+CHANNEL_NAMES_JP = {
+    "general": "一般",
+    "job": "就活",
+    "class": "授業",
+    "circle": "サークル",
+}
+
+
+def get_channel_display_name(channel_code):
+    """チャンネルコードから表示名を取得"""
+    return CHANNEL_NAMES_JP.get(channel_code, channel_code)
+
 
 # モデル定義
 class User(UserMixin, db.Model):
@@ -178,9 +191,15 @@ def post():
         db.session.commit()
 
         flash("投稿が完了しました。")
-        return redirect(url_for("timeline"))
+        # 投稿後は投稿したチャンネルのタイムラインに戻る
+        return redirect(url_for("timeline", channel=channel))
 
-    return render_template("post.html")
+    # GETリクエスト時：クエリパラメータからチャンネルを取得
+    default_channel = request.args.get("channel", "general")
+    if default_channel not in ALLOWED_CHANNELS:
+        default_channel = "general"
+
+    return render_template("post.html", default_channel=default_channel)
 
 
 @app.route("/mypage")
@@ -207,6 +226,21 @@ def jst(datetime_utc):
     datetime_jst = datetime_utc.astimezone(jst)
 
     return datetime_jst.strftime("%Y/%m/%d %H:%M")
+
+
+@app.template_filter("channel_jp")
+def channel_jp(channel_code):
+    """テンプレート用チャンネル名変換フィルター"""
+    return get_channel_display_name(channel_code)
+
+
+@app.template_global()
+def get_all_channels():
+    """すべてのチャンネル情報を取得（将来の動的チャンネル対応）"""
+    return [
+        {"code": code, "name": get_channel_display_name(code)}
+        for code in ALLOWED_CHANNELS
+    ]
 
 
 # アプリケーション起動時にDBを作成（初回のみテーブル作成）

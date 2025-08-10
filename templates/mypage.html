@@ -11,6 +11,9 @@ block content %}
     <div class="post-header">
       <span class="username">{{ post.author.username }}</span>
       <span class="timestamp">{{ post.timestamp|jst }}</span>
+      <span class="channel-label {{ post.channel }}" data-channel="{{ post.channel }}">
+        {{ post.channel|channel_jp }}
+      </span>
     </div>
     <div class="post-content">{{ post.content }}</div>
   </div>
@@ -20,4 +23,38 @@ block content %}
   </div>
   {% endif %}
 </div>
+{% endblock %} {% block scripts %}
+<script>
+  // チャンネル名から色を生成する関数
+  function getChannelColor(channelName) {
+    let hash = 0;
+    for (let i = 0; i < channelName.length; i++) {
+      const char = channelName.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash;
+    }
+
+    const hue = Math.abs(hash) % 360;
+    const saturation = 65 + (Math.abs(hash) % 20);
+    const lightness = 45 + (Math.abs(hash) % 15);
+
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  }
+
+  // チャンネルラベルに動的色を適用
+  document.addEventListener("DOMContentLoaded", function () {
+    const channelLabels = document.querySelectorAll(".channel-label");
+
+    channelLabels.forEach((label) => {
+      const channelName = label.dataset.channel;
+      
+      if (channelName && !["general", "job", "class", "circle"].includes(channelName)) {
+        const color = getChannelColor(channelName);
+        label.style.backgroundColor = color;
+      }
+    });
+  });
+</script>
+{% endblock %}
+</script>
 {% endblock %}

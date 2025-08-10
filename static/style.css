@@ -1,4 +1,18 @@
 /* 全体のスタイル */
+:root {
+    --primary-blue: #1da1f2;
+    --text-muted: #657786;
+    /* 基本チャンネルカラーパレット */
+    --channel-hue-1: #1da1f2;
+    --channel-hue-2: #28a745;
+    --channel-hue-3: #ffc107;
+    --channel-hue-4: #dc3545;
+    --channel-hue-5: #6f42c1;
+    --channel-hue-6: #fd7e14;
+    --channel-hue-7: #20c997;
+    --channel-hue-8: #e83e8c;
+}
+
 body {
     background-color: #f5f8fa;
     font-family: 'Segoe UI', Arial, sans-serif;
@@ -15,6 +29,72 @@ body {
     color: white !important;
 }
 
+/* チャンネル選択ボタン */
+.btn-outline-primary {
+    color: #1da1f2;
+    border-color: #1da1f2;
+    background-color: transparent;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 20px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+    background-color: #1da1f2;
+    border-color: #1da1f2;
+    color: white !important;
+}
+
+.btn-outline-primary.active {
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 動的チャンネル色対応 */
+.btn-outline-primary.channel-general {
+    color: var(--channel-hue-1);
+    border-color: var(--channel-hue-1);
+}
+
+.btn-outline-primary.channel-general.active {
+    background-color: var(--channel-hue-1);
+    border-color: var(--channel-hue-1);
+}
+
+.btn-outline-primary.channel-job {
+    color: var(--channel-hue-2);
+    border-color: var(--channel-hue-2);
+}
+
+.btn-outline-primary.channel-job.active {
+    background-color: var(--channel-hue-2);
+    border-color: var(--channel-hue-2);
+}
+
+.btn-outline-primary.channel-class {
+    color: var(--channel-hue-3);
+    border-color: var(--channel-hue-3);
+}
+
+.btn-outline-primary.channel-class.active {
+    background-color: var(--channel-hue-3);
+    border-color: var(--channel-hue-3);
+    color: #333 !important;
+}
+
+.btn-outline-primary.channel-circle {
+    color: var(--channel-hue-4);
+    border-color: var(--channel-hue-4);
+}
+
+.btn-outline-primary.channel-circle.active {
+    background-color: var(--channel-hue-4);
+    border-color: var(--channel-hue-4);
+}
+
 /* タイムラインスタイル */
 .timeline-container {
     max-width: 600px;
@@ -27,6 +107,14 @@ body {
     margin-bottom: 10px;
     background-color: white;
     padding: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.post-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    border-color: #d1d9e0;
 }
 
 .post-header {
@@ -38,6 +126,7 @@ body {
 .username {
     font-weight: bold;
     margin-right: 5px;
+    color: #14171a;
 }
 
 .timestamp {
@@ -45,10 +134,46 @@ body {
     font-size: 0.9em;
 }
 
+.timestamp::before {
+    content: '·';
+    margin: 0 0.5rem;
+    color: var(--text-muted);
+}
+
+.channel-label {
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    margin-left: auto;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* チャンネル別の色分け */
+.channel-label.general {
+    background: var(--channel-hue-1);
+}
+
+.channel-label.job {
+    background: var(--channel-hue-2);
+}
+
+.channel-label.class {
+    background: var(--channel-hue-3);
+    color: #333;
+}
+
+.channel-label.circle {
+    background: var(--channel-hue-4);
+}
+
 .post-content {
     font-size: 1.1em;
     line-height: 1.4;
     margin-bottom: 10px;
+    color: #14171a;
 }
 
 /* 投稿フォーム */
@@ -58,12 +183,24 @@ body {
     border-radius: 12px;
     padding: 15px;
     margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .char-counter {
     color: #657786;
     font-size: 0.9em;
     text-align: right;
+    transition: color 0.3s ease;
+}
+
+.char-counter.warning {
+    color: #ff8c00;
+    font-weight: 600;
+}
+
+.char-counter.danger {
+    color: #e0245e;
+    font-weight: 700;
 }
 
 /* ボタン */
@@ -73,11 +210,15 @@ body {
     border-radius: 20px;
     font-weight: bold;
     padding: 8px 16px;
+    border: none;
+    transition: all 0.3s ease;
 }
 
 .btn-tweet:hover {
     background-color: #0c85d0;
     color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(29, 161, 242, 0.3);
 }
 
 /* アカウント関連 */
@@ -85,6 +226,7 @@ body {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     border-radius: 12px;
     overflow: hidden;
+    border: 1px solid #e1e8ed;
 }
 
 .card-header {
@@ -95,4 +237,17 @@ body {
 
 .card-body {
     padding: 20px;
+}
+
+/* アラート */
+.alert {
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
 }
