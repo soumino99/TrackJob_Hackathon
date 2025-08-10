@@ -66,7 +66,55 @@
       </div>
       {% endif %}
     </div>
+
     <div class="post-content">{{ post.content }}</div>
+
+    <!-- いいね -->
+    <div class="d-flex align-items-center gap-2">
+      <form
+        action="{{ url_for('like', post_id=post.id) }}"
+        method="post"
+        style="display: inline"
+      >
+        {% if current_user.is_authenticated and
+        post.likes.filter_by(user_id=current_user.id).first() %}
+        <button type="submit" class="btn btn-sm btn-outline-danger">
+          ❤️ {{ post.likes.count() }}
+        </button>
+        {% else %}
+        <button type="submit" class="btn btn-sm btn-outline-secondary">
+          🤍 {{ post.likes.count() }}
+        </button>
+        {% endif %}
+      </form>
+      <span class="text-muted">コメント {{ post.comments.count() }}</span>
+    </div>
+
+    <!-- コメント投稿 -->
+    <form
+      action="{{ url_for('comment', post_id=post.id) }}"
+      method="post"
+      class="mt-2"
+    >
+      <div class="input-group">
+        <input
+          type="text"
+          name="content"
+          class="form-control"
+          placeholder="コメントを入力"
+        />
+        <button type="submit" class="btn btn-outline-primary">送信</button>
+      </div>
+    </form>
+
+    <!-- コメント一覧（timestamp昇順） -->
+    {% set comments_sorted = post.comments.all()|sort(attribute='timestamp') %}
+    {% for c in comments_sorted %}
+    <div class="comment">
+      <strong>{{ c.user.username }}</strong>：{{ c.content }}
+      <span class="text-muted">（{{ c.timestamp|jst }}）</span>
+    </div>
+    {% endfor %}
   </div>
   {% endfor %} {% else %}
   <div class="alert alert-info">
@@ -78,33 +126,23 @@
 <script>
   // チャンネル名から色を生成する関数
   function getChannelColor(channelName) {
-    // 文字列のハッシュ値を計算
     let hash = 0;
     for (let i = 0; i < channelName.length; i++) {
       const char = channelName.charCodeAt(i);
       hash = (hash << 5) - hash + char;
-      hash = hash & hash; // 32bit整数に変換
+      hash = hash & hash;
     }
-
-    // ハッシュ値から色相を計算（0-360度）
     const hue = Math.abs(hash) % 360;
-
-    // 彩度と明度を適切に設定
-    const saturation = 65 + (Math.abs(hash) % 20); // 65-84%
-    const lightness = 45 + (Math.abs(hash) % 15); // 45-59%
-
+    const saturation = 65 + (Math.abs(hash) % 20);
+    const lightness = 45 + (Math.abs(hash) % 15);
     return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
   }
 
   // チャンネルラベルに動的色を適用
   document.addEventListener("DOMContentLoaded", function () {
     const channelLabels = document.querySelectorAll(".channel-label");
-
     channelLabels.forEach((label) => {
-      // データ属性から英語のチャンネル名を取得（色生成用）
       const channelName = label.dataset.channel;
-
-      // 基本チャンネル以外は動的色を適用
       if (
         channelName &&
         !["general", "job", "class", "circle"].includes(channelName)
@@ -114,40 +152,30 @@
       }
     });
 
-    // チャンネル選択ボタンにも動的色を適用
     const channelButtons = document.querySelectorAll(
       '.btn-outline-primary[href*="channel="]'
     );
-
     channelButtons.forEach((button) => {
       const url = new URL(button.href);
       const channelName = url.searchParams.get("channel");
-
       if (
         channelName &&
         !["general", "job", "class", "circle"].includes(channelName)
       ) {
         const color = getChannelColor(channelName);
-
-        // 通常状態
         button.style.color = color;
         button.style.borderColor = color;
-
-        // アクティブ状態
         if (button.classList.contains("active")) {
           button.style.backgroundColor = color;
           button.style.borderColor = color;
           button.style.color = "white";
         }
-
-        // ホバー効果
         button.addEventListener("mouseenter", function () {
           if (!this.classList.contains("active")) {
             this.style.backgroundColor = color;
             this.style.color = "white";
           }
         });
-
         button.addEventListener("mouseleave", function () {
           if (!this.classList.contains("active")) {
             this.style.backgroundColor = "transparent";
@@ -158,14 +186,12 @@
     });
   });
 
-  // 投稿削除機能
+  // 投稿削除
   function deletePost(postId) {
     if (confirm("この投稿を削除しますか？この操作は取り消せません。")) {
       const form = document.createElement("form");
       form.method = "POST";
       form.action = `/delete_post/${postId}`;
-
-      // CSRFトークンがあれば追加
       const csrfToken = document.querySelector('meta[name="csrf-token"]');
       if (csrfToken) {
         const input = document.createElement("input");
@@ -174,7 +200,6 @@
         input.value = csrfToken.content;
         form.appendChild(input);
       }
-
       document.body.appendChild(form);
       form.submit();
     }

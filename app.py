@@ -78,6 +78,40 @@ class Post(db.Model):
     deleted_at = db.Column(db.DateTime, nullable=True)
 
 
+# いいねモデル
+class Like(db.Model):
+    __tablename__ = "likes"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id"), nullable=False, index=True
+    )
+    post_id = db.Column(
+        db.Integer, db.ForeignKey("posts.id"), nullable=False, index=True
+    )
+
+    user = db.relationship("User", backref=db.backref("likes", lazy="dynamic"))
+    post = db.relationship("Post", backref=db.backref("likes", lazy="dynamic"))
+
+
+# コメントモデル
+class Comment(db.Model):
+    __tablename__ = "comments"
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(
+        db.DateTime, index=True, default=datetime.utcnow, nullable=False
+    )
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id"), nullable=False, index=True
+    )
+    post_id = db.Column(
+        db.Integer, db.ForeignKey("posts.id"), nullable=False, index=True
+    )
+
+    user = db.relationship("User", backref=db.backref("comments", lazy="joined"))
+    post = db.relationship("Post", backref=db.backref("comments", lazy="dynamic"))
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -281,6 +315,35 @@ def get_all_channels():
         {"code": code, "name": get_channel_display_name(code)}
         for code in ALLOWED_CHANNELS
     ]
+
+
+# いいね（トグル）
+@app.route("/like/<int:post_id>", methods=["POST"])
+@login_required
+def like(post_id):
+    post = Post.query.get_or_404(post_id)
+    existing = Like.query.filter_by(user_id=current_user.id, post_id=post.id).first()
+    if existing:
+        db.session.delete(existing)  # 解除
+    else:
+        db.session.add(Like(user_id=current_user.id, post_id=post.id))
+    db.session.commit()
+    # 元のチャンネルを保つ
+    return redirect(request.referrer or url_for("timeline", channel=post.channel))
+
+
+# コメント投稿
+@app.route("/comment/<int:post_id>", methods=["POST"])
+@login_required
+def comment(post_id):
+    post = Post.query.get_or_404(post_id)
+    content = (request.form.get("content") or "").strip()
+    if not content:
+        flash("コメント内容を入力してください")
+        return redirect(request.referrer or url_for("timeline", channel=post.channel))
+    db.session.add(Comment(content=content, user_id=current_user.id, post_id=post.id))
+    db.session.commit()
+    return redirect(request.referrer or url_for("timeline", channel=post.channel))
 
 
 # アプリケーション起動時にDBを作成（初回のみテーブル作成）
