@@ -45,7 +45,16 @@ class Post(db.Model):
     content = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    channel = db.Column(db.String(20), default='general') 
+    channel_id = db.Column(db.Integer, db.ForeignKey('channels.id'))
+
+class Channel(db.Model):
+    __tablename__ = 'channels'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(20), unique=True, nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'),nullable=True)  
+
+    posts = db.relationship('Post', backref='channel_obj', lazy='dynamic')
    
 @login_manager.user_loader
 def load_user(user_id):
@@ -112,21 +121,28 @@ def logout():
 @app.route('/timeline')
 @login_required
 def timeline():
-    selected_channel = request.args.get('channel', None)
+    selected_channel_name = request.args.get('channel', None)
+    channels = Channel.query.all()
 
-    if selected_channel:
-        posts = Post.query.filter_by(channel=selected_channel).order_by(Post.timestamp.desc()).all()
+    if selected_channel_name:
+        channel = Channel.query.filter_by(name=selected_channel_name).first()
+        if channel:
+            posts = Post.query.filter_by(channel_id=channel.id).order_by(Post.timestamp.desc()).all()
+        else:
+            posts = []
     else:
         posts = Post.query.order_by(Post.timestamp.desc()).all()
-
-    return render_template('timeline.html', posts=posts)
+   
+    return render_template('timeline.html', posts=posts, channels=channels, selected_channel=selected_channel_name)
 
 @app.route('/post', methods=['GET', 'POST'])
 @login_required
 def post():
+    channels = Channel.query.all()
+
     if request.method == 'POST':
         content = request.form.get('content')
-        channel = request.form.get('channel')
+        channel_id = request.form.get('channel_id')
         
         if not content:
             flash('投稿内容を入力してください')
@@ -136,21 +152,51 @@ def post():
             flash('投稿は140文字以内にしてください')
             return redirect(url_for('post'))
         
-        if not channel:
-            channel = 'general'
-        
-        if len(channel) > 20:
-            flash('投稿は20文字以内にしてください')
+        if not channel_id:
+            channel_id = 1
+
+        channel_obj = Channel.query.get(channel_id)
+        if not channel_obj:
+            flash('指定されたチャンネルは存在しません')
+            return redirect(url_for('post'))
+
+        if len(channel_obj.name) > 20:
+            flash('チャンネル名は20文字以内にしてください')
             return redirect(url_for('post'))
         
-        post = Post(content=content, author=current_user, channel=channel)
+        post = Post(content=content, author=current_user, channel_id=channel_id)
         db.session.add(post)
         db.session.commit()
         
         flash('投稿が完了しました！')
-        return redirect(url_for('timeline'))
+        return redirect(url_for('timeline', channel=channel_obj.name))
     
-    return render_template('post.html')
+    return render_template('post.html',channels=channels)
+
+@app.route('/create_channel', methods=['GET', 'POST'])
+@login_required
+def create_channel():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        
+        if not name:
+            flash('チャンネル名を入力してください')
+            return redirect(url_for('create_channel'))
+
+        if Channel.query.filter_by(name=name).first():
+            flash('そのチャンネル名は既に存在します')
+            return redirect(url_for('create_channel'))
+
+        channel = Channel(
+            name=name,
+            created_by=current_user.id
+        )
+        db.session.add(channel)
+        db.session.commit()
+        flash('チャンネルを作成しました！')
+        return redirect(url_for('timeline', channel=channel.name))
+
+    return render_template('create_channel.html')
 
 @app.route('/mypage')
 @login_required
@@ -176,6 +222,16 @@ def jst(datetime_utc):
 # アプリケーション起動時にDBを作成
 with app.app_context():
     db.create_all()
+
+with app.app_context():
+    db.create_all()
+    # チャンネルがなければ初期チャンネルを作成
+    if Channel.query.count() == 0:
+        default_channels = ['一般', '就活', '授業', 'サークル']
+        for name in default_channels:
+            channel = Channel(name=name, created_by=None)  # created_byをNoneにしてもOK
+            db.session.add(channel)
+        db.session.commit()
 
 if __name__ == '__main__':
     app.run()  # デバッグモードを無効化
